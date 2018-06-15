@@ -23,11 +23,6 @@ void hsv2rgb(
     byte *red, byte *green, byte *blue)
 {
     unsigned int p, q, t, ff;
-    /*
-    hsv2rgb(
-        millis()/50, 200, 100, 
-        &peak_red, &peak_green, &peak_blue);
-*/
 
     if (saturation == 0)
     {

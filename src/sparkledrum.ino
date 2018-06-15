@@ -17,21 +17,24 @@
  */
 
 #include <Adafruit_NeoPixel.h>
+#include "colour.h"
 
-#define STRIP_PIN           PB3
+#define STRIP_PIN           PB2
 #define SENSOR_PIN          A2
+#define POT_PIN             A3
 #define NUM_LEDS            12
 #define SENSOR_THRESHOLD    10
 #define SENSOR_COOLDOWN     75
 
 /* Globals */
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PB3, NEO_GRB | NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, STRIP_PIN, NEO_GRB | NEO_KHZ800);
 
 float amplitude = 0;
 uint32_t cooldown = 0;
 float pos = 0;
 uint32_t last_time = 0;
+int last_reading = 0;
 
 /* Main */
 
@@ -44,19 +47,23 @@ void setup()
 
 void loop() 
 {
-    bool reading = analogRead(SENSOR_PIN) > SENSOR_THRESHOLD;
+    //int threshold = analogRead(POT_PIN)/4;
+    int threshold = SENSOR_THRESHOLD;
+    int reading = analogRead(SENSOR_PIN);
 
-    if (reading && millis() > cooldown) {
+    if (last_reading > threshold && reading > threshold && millis() > cooldown) {
         amplitude = 1;
         cooldown = millis() + SENSOR_COOLDOWN;
     }
+    last_reading = reading;
 
     uint32_t now = millis();
 
     // Have the strip colour vary slightly over time
-    byte peak_red = 150+80*abs(sin(now/500.0));
-    byte peak_green = 50*abs(sin(now/500.0));
-    byte peak_blue = 50+50*abs(sin(now/800.0));
+    byte peak_red, peak_green, peak_blue;
+    hsv2rgb(
+        150+50*sin(now/800.0), 200, 200, 
+        &peak_red, &peak_green, &peak_blue);
 
     for (int n = 0; n < NUM_LEDS; n++) 
     {
