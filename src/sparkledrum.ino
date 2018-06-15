@@ -31,6 +31,7 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, PB3, NEO_GRB | NEO_KHZ800)
 float amplitude = 0;
 uint32_t cooldown = 0;
 float pos = 0;
+uint32_t last_time = 0;
 
 /* Main */
 
@@ -38,6 +39,7 @@ void setup()
 {
     strip.begin();
     strip.show();
+    last_time = millis();
 }
 
 void loop() 
@@ -49,10 +51,12 @@ void loop()
         cooldown = millis() + SENSOR_COOLDOWN;
     }
 
+    uint32_t now = millis();
+
     // Have the strip colour vary slightly over time
-    byte peak_red = 150+80*abs(sin(millis()/500.0));
-    byte peak_green = 50*abs(sin(millis()/500.0));
-    byte peak_blue = 50+50*abs(sin(millis()/800.0));
+    byte peak_red = 150+80*abs(sin(now/500.0));
+    byte peak_green = 50*abs(sin(now/500.0));
+    byte peak_blue = 50+50*abs(sin(now/800.0));
 
     for (int n = 0; n < NUM_LEDS; n++) 
     {
@@ -61,9 +65,9 @@ void loop()
         float off = PI*n/(NUM_LEDS);
         float s = abs(sin(pos+off));
 
-        // Squaring the result has the affect of smoothing out the half sine curve
+        // Cubing the result has the affect of smoothing out the half sine curve
         // when the value of 's' is closer to zero.
-        s *= s;
+        s = s*s*s;
 
         byte red = (byte)(s*peak_red*amplitude);
         byte green = (byte)(s*peak_green*amplitude);
@@ -75,9 +79,14 @@ void loop()
 
     // Keep the sine wave moving across the strip 
     // (somewhat slower when the light is dimmer)
-    pos += 0.02*(1+amplitude/200.0);
+    pos += 0.02*(1+amplitude);
 
-    // Have the pulse fade out over time
-    amplitude *= 0.97;
+    // Have the pulse fade out over time according to an exponential decay curve
+    if (amplitude > 0) {
+        float dt = (now - last_time)/1000.0;
+        amplitude -= 3*amplitude*dt;
+    }
+
+    last_time = now;
 }
 
