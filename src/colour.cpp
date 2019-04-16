@@ -19,7 +19,7 @@
 #include "colour.h"
 
 void hsv2rgb(
-    byte hue, byte saturation, byte value,
+    uint16_t hue, byte saturation, byte value,
     byte *red, byte *green, byte *blue)
 {
     unsigned int p, q, t, ff;
@@ -31,9 +31,10 @@ void hsv2rgb(
         *blue = value;
         return;
     }
-    int quad = hue/43;
+    hue %= 360;
+    int quad = hue/60;
 
-    ff = (hue - 43*quad) * 6;
+    ff = (byte)((hue % 60) * 4.25);
     
     p = (value * (255 - saturation)) >> 8;
     q = (value * (255 - ((saturation * ff) >> 8))) >> 8;

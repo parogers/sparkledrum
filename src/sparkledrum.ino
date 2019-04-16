@@ -19,12 +19,9 @@
 #include <Adafruit_NeoPixel.h>
 #include "colour.h"
 
-#define STRIP_PIN           PB2
+#define STRIP_PIN           2
 #define SENSOR_PIN          A2
-#define POT_PIN             A3
-#define NUM_LEDS            12
-#define SENSOR_THRESHOLD    10
-#define SENSOR_COOLDOWN     75
+#define NUM_LEDS            15
 
 /* Globals */
 
@@ -47,51 +44,61 @@ void setup()
 
 void loop() 
 {
-    //int threshold = analogRead(POT_PIN)/4;
-    int threshold = SENSOR_THRESHOLD;
-    int reading = analogRead(SENSOR_PIN);
+    /* TODO - handle drum strikes */
+    /* ... */
 
-    if (last_reading > threshold && reading > threshold && millis() > cooldown) {
-        amplitude = 1;
-        cooldown = millis() + SENSOR_COOLDOWN;
-    }
-    last_reading = reading;
-
+    amplitude = 1;
+    
     uint32_t now = millis();
 
     // Have the strip colour vary slightly over time
     byte peak_red, peak_green, peak_blue;
     hsv2rgb(
-        150+50*sin(now/800.0), 200, 200, 
+        210+70*sin(now/800.0), 200, 200, 
         &peak_red, &peak_green, &peak_blue);
+
+    float f_red = peak_red * amplitude;
+    float f_green = peak_green * amplitude;
+    float f_blue = peak_blue * amplitude;
+
+    f_red += (1-amplitude)*8;
+    f_green += (1-amplitude)*4*(1+sin(now/500.0));
+    f_blue += (1-amplitude)*8;
 
     for (int n = 0; n < NUM_LEDS; n++) 
     {
         // Have the strip peak in the middle, and fade out at the ends
         // (ie strip cell brightness is mapped onto a half wavelength sine curve)
-        float off = PI*n/(NUM_LEDS);
+        float off = 2*PI*n/(NUM_LEDS);
         float s = abs(sin(pos+off));
 
-        // Cubing the result has the affect of smoothing out the half sine curve
+        // Raising the result to a power has the affect of smoothing out the half sine curve
         // when the value of 's' is closer to zero.
-        s = s*s*s;
+        s = s*s;
 
-        byte red = (byte)(s*peak_red*amplitude);
-        byte green = (byte)(s*peak_green*amplitude);
-        byte blue = (byte)(s*peak_blue*amplitude);
+        byte red = (byte)(s*f_red);
+        byte green = (byte)(s*f_green);
+        byte blue = (byte)(s*f_blue);
 
-        strip.setPixelColor(n, strip.Color(red, green, blue));
+        strip.setPixelColor(n, strip.Color(red+1, green+1, blue+1));
     }
     strip.show();
 
     // Keep the sine wave moving across the strip 
     // (somewhat slower when the light is dimmer)
-    pos += 0.02*(1+amplitude);
+    pos += 0.01*(0.5+2.5*amplitude);
 
     // Have the pulse fade out over time according to an exponential decay curve
+    // 
+    // y = y0*e^(Bx)
+    // y' = y0*B*e^(Bx)
+    // y' = B*y
+    //
+    // So: y(t+dt) = y(t) + y'(t)*dt = y(t) + B*y*dt
+    //
     if (amplitude > 0) {
         float dt = (now - last_time)/1000.0;
-        amplitude -= 3*amplitude*dt;
+        amplitude -= 4*amplitude*dt;
     }
 
     last_time = now;

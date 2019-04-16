@@ -22,7 +22,7 @@
 #include <Arduino.h>
 
 void hsv2rgb(
-    byte hue, byte saturation, byte value,
+    uint16_t hue, byte saturation, byte value,
     byte *red, byte *green, byte *blue);
 
 #endif
